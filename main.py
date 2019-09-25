@@ -90,8 +90,6 @@ def train(dataset, fold_index, mse_list, rmse_list, r2_list):
     r2_result = r2(test_xs, test_ys, ws)
     mse_result = mse(test_xs, test_ys, ws)
 
-    print(f"{fold_index}: rmse:", rmse_result)
-    print(f"{fold_index}: r2:", r2_result)
     rmse_list.append(rmse_result)
     r2_list.append(r2_result)
     mse_list.append(mse_result)
