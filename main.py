@@ -2,7 +2,7 @@ import numpy as np
 import multiprocessing
 
 
-from dataset_reader import read_dataset, split_dataset, split_to_folds
+from dataset_ops import read_dataset, split_dataset, split_to_folds, normalize_dataset
 
 
 FOLDS_COUNT = 5
@@ -10,10 +10,6 @@ FOLDS_COUNT = 5
 
 def dist(xs1, xs2):
     return np.sqrt(np.dot(xs1, xs2))
-
-
-def func(x):
-    return 2 * x - 1
 
 
 def f(ws, x):
@@ -64,20 +60,24 @@ def train(dataset, fold_index, mse_list, rmse_list, r2_list):
     print(f"Start train {fold_index}")
     train_set, test_set = split_to_folds(dataset, fold_index, FOLDS_COUNT)
 
+    normalize_dataset(train_set)
+    normalize_dataset(test_set)
+
     ws = get_ws(train_set, 0)
     train_xs, train_ys = split_dataset(train_set)
 
     iters = 0
     coef = 0.0405
+    prev = 0
     try:
         for _ in range(100):
             iters += 1
             print(f"{fold_index}: {iters}")
             ws = do_step(train_xs, train_ys, ws, coef)
             current = mse(train_xs, train_ys, ws)
-            # print(f"{iterations}: {current}, {abs(prev - current)}, {coef}")
+            print(f": {current}, {abs(prev - current)}, {coef}")
+            prev = current
             if current > 10000:
-                # print("reset all")
                 iters = 0
                 coef *= 0.9
                 ws = get_ws(train_set, 0)

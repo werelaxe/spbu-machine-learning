@@ -6,10 +6,15 @@ import numpy as np
 DATASET_PATH = 'dataset.csv'
 
 
-def normalize(xs):
-    average = np.average(xs)
-    std = np.std(xs)
-    return np.array([(x - average) / std for x in xs])
+def normalize_dataset(dataset):
+    for i in range(len(dataset[0]) - 1):
+        dataset[:, i] = normalize_vector(dataset[:, i])
+
+
+def normalize_vector(values):
+    average = np.average(values)
+    std = np.std(values)
+    return np.array([(x - average) / std for x in values])
 
 
 def read_dataset():
@@ -22,8 +27,6 @@ def read_dataset():
     for feature_for_removing in features_for_removing[::-1]:
         dataset = np.delete(dataset, feature_for_removing, 1)
     print(f"These features have been removed: {features_for_removing}", file=stderr)
-    for i in range(len(dataset[0]) - 1):
-        dataset[:, i] = normalize(dataset[:, i])
     np.random.shuffle(dataset)
     return dataset
 
