@@ -14,7 +14,7 @@ def normalize_dataset(dataset):
 def normalize_vector(values):
     average = np.average(values)
     std = np.std(values)
-    return np.array([(x - average) / std for x in values])
+    return (values - average) / std
 
 
 def read_dataset():
