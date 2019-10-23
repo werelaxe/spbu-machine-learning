@@ -12,18 +12,14 @@ def dist(xs1, xs2):
     return np.sqrt(np.dot(xs1, xs2))
 
 
-def f(ws, x):
-    return ws[0] + np.dot(ws[1:], x)
-
-
 def mse(xs, ys, ws):
-    f_xs = np.array([f(ws, x) for x in xs])
+    f_xs = np.dot(xs, ws[1:]) + ws[0]
     return ((ys - f_xs) ** 2).sum() / len(xs)
 
 
 def r2(xs, ys, ws):
     avg = np.average(ys)
-    f_xs = np.array([f(ws, x) for x in xs])
+    f_xs = np.dot(xs, ws[1:]) + ws[0]
     ss_res = ((ys - f_xs) ** 2).sum()
     ss_tot = ((ys - avg) ** 2).sum()
     return 1 - ss_res / ss_tot
@@ -34,17 +30,9 @@ def rmse(xs, ys, ws):
 
 
 def grad_of_mse(xs, ys, ws):
-    grad = np.array([])
-
-    f_0 = np.array([(f(ws, xs[i]) - ys[i]) * 1 for i in range(len(xs))])
-
-    grad = np.append(grad, 2 * f_0.sum() / len(xs))
-
-    for j in range(len(xs[0])):
-        f_j = np.array([(f(ws, xs[i]) - ys[i]) * xs[i][j] for i in range(len(xs))])
-        grad = np.append(grad, 2 * f_j.sum() / len(xs))
-
-    return grad
+    xs = np.insert(xs, 0, np.array([1.] * len(xs)), 1)
+    value = np.dot(xs, ws) - ys
+    return 2 * np.dot(value, xs) / len(xs)
 
 
 def do_step(xs, ys, ws, coef):
