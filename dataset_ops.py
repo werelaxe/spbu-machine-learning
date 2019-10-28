@@ -2,7 +2,6 @@ from sys import stderr
 
 import numpy as np
 
-
 DATASET_PATH = 'dataset.csv'
 
 
@@ -29,6 +28,10 @@ def read_dataset():
     print(f"These features have been removed: {features_for_removing}", file=stderr)
     np.random.shuffle(dataset)
     return dataset
+
+
+def get_batch(dataset, batch_index, batch_size):
+    return dataset[batch_index * batch_size:(batch_index + 1) * batch_size]
 
 
 def split_to_folds(dataset, i, folds_count):
