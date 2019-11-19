@@ -99,13 +99,10 @@ def main():
     print("fold index |  rmse      |  r2       |   weights")
     print("-" * 50)
     for fold_index in range(FOLDS_COUNT):
-        print(f"{fold_index}          | {rmse_list[fold_index]:10.6f} |{r2_list[fold_index]:10.6f} | {','.join(
-            f'{e:10.6f}' for e in ws_list[fold_index])}")
+        print(f"{fold_index}          | {rmse_list[fold_index]:10.6f} |{r2_list[fold_index]:10.6f} | {','.join(f'{e:10.6f}' for e in ws_list[fold_index])}")
     print("-" * 50)
-    print(f"avg        | {sum(rmse_list) / FOLDS_COUNT:10.6f} |{sum(r2_list) / FOLDS_COUNT:10.6f} | {','.join(
-        f'{e:10.6f}' for e in sum(ws_list) / FOLDS_COUNT)}")
-    print(f"std        | {np.std(rmse_list):10.6f} |{np.std(r2_list):10.6f} | {','.join(
-        f'{e:10.6f}' for e in np.std(ws_list, axis=0))}")
+    print(f"avg        | {sum(rmse_list) / FOLDS_COUNT:10.6f} |{sum(r2_list) / FOLDS_COUNT:10.6f} | {','.join(f'{e:10.6f}' for e in sum(ws_list) / FOLDS_COUNT)}")
+    print(f"std        | {np.std(rmse_list):10.6f} |{np.std(r2_list):10.6f} | {','.join(f'{e:10.6f}' for e in np.std(ws_list, axis=0))}")
 
 
 if __name__ == '__main__':
