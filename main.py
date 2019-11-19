@@ -8,7 +8,7 @@ FOLDS_COUNT = 5
 BATCHES_COUNT = 100
 LEARNING_RATE = 0.0405
 ACCEPTABLE_R2 = 0.3
-ACCEPTABLE_EPOCH_COUNT = 20
+ACCEPTABLE_EPOCH_COUNT = 30
 
 
 def dist(xs1, xs2):
@@ -47,8 +47,8 @@ def get_ws(dataset, start_value):
     return np.array([start_value] * (len(dataset[0])))
 
 
-def train(dataset, fold_index, learning_rate, mse_list, rmse_list, r2_list):
-    print(f"Start train {fold_index}")
+def train(dataset, fold_index, learning_rate, mse_list, rmse_list, r2_list, ws_list):
+    # print(f"Start train {fold_index}", file=stderr)
     train_set, test_set = split_to_folds(dataset, fold_index, FOLDS_COUNT)
     test_xs, test_ys = split_dataset(test_set)
 
@@ -66,7 +66,7 @@ def train(dataset, fold_index, learning_rate, mse_list, rmse_list, r2_list):
             train_xs, train_ys = split_dataset(batch)
             ws = do_step(train_xs, train_ys, ws, learning_rate)
         r2_result = r2(test_xs, test_ys, ws)
-        print(f"{fold_index}: r2={r2_result}, epoch_index={epoch_index}")
+        # print(f"{fold_index}: r2={r2_result}, epoch_index={epoch_index}", file=stderr)
         epoch_index += 1
 
     rmse_result = rmse(test_xs, test_ys, ws)
@@ -75,6 +75,7 @@ def train(dataset, fold_index, learning_rate, mse_list, rmse_list, r2_list):
     rmse_list.append(rmse_result)
     r2_list.append(r2_result)
     mse_list.append(mse_result)
+    ws_list.append(ws)
 
 
 def main():
@@ -83,17 +84,28 @@ def main():
     rmse_list = manager.list()
     r2_list = manager.list()
     mse_list = manager.list()
+    ws_list = manager.list()
     jobs = []
     for i in range(FOLDS_COUNT):
-        p = multiprocessing.Process(target=train, args=(dataset, i, LEARNING_RATE, mse_list, rmse_list, r2_list))
+        p = multiprocessing.Process(target=train,
+                                    args=(dataset, i, LEARNING_RATE, mse_list, rmse_list, r2_list, ws_list))
         jobs.append(p)
         p.start()
 
     for proc in jobs:
         proc.join()
-    print("Avg rmse: ", sum(rmse_list) / FOLDS_COUNT)
-    print("Avg r2:", sum(r2_list) / FOLDS_COUNT)
-    print("Avg mse:", sum(mse_list) / FOLDS_COUNT)
+
+    print("-" * 50)
+    print("fold index |  rmse      |  r2       |   weights")
+    print("-" * 50)
+    for fold_index in range(FOLDS_COUNT):
+        print(f"{fold_index}          | {rmse_list[fold_index]:10.6f} |{r2_list[fold_index]:10.6f} | {','.join(
+            f'{e:10.6f}' for e in ws_list[fold_index])}")
+    print("-" * 50)
+    print(f"avg        | {sum(rmse_list) / FOLDS_COUNT:10.6f} |{sum(r2_list) / FOLDS_COUNT:10.6f} | {','.join(
+        f'{e:10.6f}' for e in sum(ws_list) / FOLDS_COUNT)}")
+    print(f"std        | {np.std(rmse_list):10.6f} |{np.std(r2_list):10.6f} | {','.join(
+        f'{e:10.6f}' for e in np.std(ws_list, axis=0))}")
 
 
 if __name__ == '__main__':

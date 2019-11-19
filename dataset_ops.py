@@ -1,5 +1,3 @@
-from sys import stderr
-
 import numpy as np
 
 DATASET_PATH = 'dataset.csv'
@@ -25,7 +23,7 @@ def read_dataset():
 
     for feature_for_removing in features_for_removing[::-1]:
         dataset = np.delete(dataset, feature_for_removing, 1)
-    print(f"These features have been removed: {features_for_removing}", file=stderr)
+    print(f"These features have been removed due to zero std: {features_for_removing}")
     np.random.shuffle(dataset)
     return dataset
 
