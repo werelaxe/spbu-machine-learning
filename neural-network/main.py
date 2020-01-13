@@ -1,6 +1,4 @@
 import math
-import random
-from time import time, sleep
 
 import numpy as np
 
@@ -24,6 +22,10 @@ class NeuralNetwork:
         if self.layers and self.layers[-1].shape[1] != layer.shape[0]:
             raise Exception(f"Layers {self.layers[-1]} and {layer} have incompatible sizes")
         self.layers.append(layer)
+
+    def add_layers(self, layers):
+        for layer in layers:
+            self.add_layer(layer)
 
     def predict(self, inp):
         out = inp
@@ -55,6 +57,15 @@ class NeuralNetwork:
     def mse(self, test_input, test_output):
         return np.square(test_output - self.predict(test_input)).sum() / test_input.shape[0]
 
+    def learn(self, train_input, train_output, learning_rate, accuracy):
+        mse_val = self.mse(train_input, train_output)
+        while mse_val > accuracy:
+            try:
+                self.do_step(train_input, train_output, learning_rate)
+            except KeyboardInterrupt:
+                print("Stopped by user")
+                break
+
 
 LAYER_1 = np.array([
     [0.2, 0.3, 0.4],
@@ -77,30 +88,24 @@ LAYER_3 = np.array([
 ])
 
 
-def main():
-    # nn = NeuralNetwork([2, 3, 4, 2])
+def gen_out_by_layers(layers, inp):
     nn = NeuralNetwork()
+    nn.add_layers(layers)
+    return nn.predict(inp)
 
-    inp = np.array([[0.1, 0.9]])
-    out = np.array([[0.1, 0.2]])
-    print(nn.predict(inp))
 
-    exit(1)
-    # layer_1 = np.random.rand(2, 3)
-    # layer_2 = np.random.rand(3, 4)
-    # layer_3 = np.random.rand(4, 2)
-    mse_val = nn.mse(inp, out)
+def main():
+    nn = NeuralNetwork([2, 3, 4, 2])
 
-    i = 0
-    while mse_val > 10e-6:
-        try:
-            nn.do_step(inp, out, 0.01)
-            mse_val = nn.mse(inp, out)
-            i += 1
-            print(mse_val)
-        except KeyboardInterrupt:
-            break
-    print(nn.predict(inp))
+    train_input = np.random.rand(1000, 2)
+    train_output = gen_out_by_layers([LAYER_1, LAYER_2, LAYER_3], train_input)
+
+    nn.learn(train_input, train_output, 0.1, 10e-6)
+
+    test_input = np.random.rand(100, 2)
+    test_output = gen_out_by_layers([LAYER_1, LAYER_2, LAYER_3], test_input)
+
+    print(nn.mse(test_input, test_output))
 
 
 if __name__ == '__main__':
