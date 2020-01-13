@@ -12,34 +12,48 @@ def sigmoid(x):
 array_sigmoid = np.vectorize(sigmoid)
 
 
-def get_grad(inp, layer, out, k):
-    o_1 = inp
-    o_2 = array_sigmoid(np.dot(inp, layer))
-    delta = o_2 * (1 - o_2) * (out - o_2)
-    return -k * np.dot(o_1.swapaxes(0, 1), delta)
+class NeuralNetwork:
+    def __init__(self, layer_sizes=None):
+        self.layers = []
+        if layer_sizes is None:
+            return
+        for i in range(len(layer_sizes) - 1):
+            self.add_layer(np.random.rand(layer_sizes[i], layer_sizes[i + 1]))
 
+    def add_layer(self, layer):
+        if self.layers and self.layers[-1].shape[1] != layer.shape[0]:
+            raise Exception(f"Layers {self.layers[-1]} and {layer} have incompatible sizes")
+        self.layers.append(layer)
 
-def compute_f(inp, layer_1, layer_2):
-    o_1 = inp
-    o_2 = array_sigmoid(np.dot(o_1, layer_1))
-    o_3 = array_sigmoid(np.dot(o_2, layer_2))
-    return o_3
+    def predict(self, inp):
+        out = inp
+        for layer in self.layers:
+            out = array_sigmoid(np.dot(out, layer))
+        return out
 
+    def layers_count(self):
+        return len(self.layers)
 
-def grads(inp, layer_1, layer_2, out, k):
-    o_1 = inp
-    o_2 = array_sigmoid(np.dot(o_1, layer_1))
-    o_3 = array_sigmoid(np.dot(o_2, layer_2))
-    delta_3 = -o_3 * (1 - o_3) * (out - o_3)
-    delta_2 = o_2 * (1 - o_2) * np.dot(layer_2, delta_3.swapaxes(0, 1)).swapaxes(0, 1)
-    grad_1 = -k * np.dot(o_1.swapaxes(0, 1), delta_2)
-    grad_2 = -k * np.dot(o_2.swapaxes(0, 1), delta_3)
-    return grad_1, grad_2
+    def get_gradients(self, train_input, train_output):
+        outs = [train_input]
+        for layer in self.layers:
+            outs.append(array_sigmoid(np.dot(outs[-1], layer)))
+        deltas = [-outs[-1] * (1 - outs[-1]) * (train_output - outs[-1])]
+        for i in range(self.layers_count() - 1):
+            new_delta = outs[-i - 2] * (1 - outs[-i - 2]) * np.dot(self.layers[-i - 1], deltas[-1].swapaxes(0, 1)).swapaxes(0, 1)
+            deltas.append(new_delta)
+        grads = []
+        for i in range(self.layers_count()):
+            grads.append(np.dot(outs[i].swapaxes(0, 1), deltas[-i - 1]))
+        return grads
 
+    def do_step(self, train_input, train_output, learning_rate):
+        grads = self.get_gradients(train_input, train_output)
+        for i in range(self.layers_count()):
+            self.layers[i] += -learning_rate * grads[i]
 
-def mse(inp, layer_1, layer_2, out):
-    f_values = compute_f(inp, layer_1, layer_2)
-    return (np.square(out - f_values)).sum() / inp.shape[0]
+    def mse(self, test_input, test_output):
+        return np.square(test_output - self.predict(test_input)).sum() / test_input.shape[0]
 
 
 LAYER_1 = np.array([
@@ -49,35 +63,44 @@ LAYER_1 = np.array([
 
 
 LAYER_2 = np.array([
-    [0.37431857, -0.4050446,  -0.20757726,  0.234686],
-    [10, -0.4266498,   0.45890669, -0.0897836],
-    [-0.14667352, -0.21691296, -0.02718759,  0.14773357]
+    [0.37431857, -0.4050446,  -2.757726,  0.234686],
+    [10, -0.4266498,   0.45890669, -1.0897836],
+    [-0.14667352, -2.1691296, -0.02718759,  0.14773357]
 ])
 
 
-def gen():
-    inp = [[random.random() for _ in range(4)] for _ in range(10)]
-    print(inp)
-    print(compute_f(inp, LAYER_1, LAYER_2).tolist())
+LAYER_3 = np.array([
+    [0.3, 0.1],
+    [-2., 0.2],
+    [0.1, -3.1],
+    [-0.9, 1.1],
+])
 
 
 def main():
-    layer_1 = LAYER_1
-    layer_2 = np.random.rand(3, 4)
-    mse_val = mse(inp, layer_1, layer_2, out)
+    # nn = NeuralNetwork([2, 3, 4, 2])
+    nn = NeuralNetwork()
 
-    while mse_val > 10e-9:
+    inp = np.array([[0.1, 0.9]])
+    out = np.array([[0.1, 0.2]])
+    print(nn.predict(inp))
+
+    exit(1)
+    # layer_1 = np.random.rand(2, 3)
+    # layer_2 = np.random.rand(3, 4)
+    # layer_3 = np.random.rand(4, 2)
+    mse_val = nn.mse(inp, out)
+
+    i = 0
+    while mse_val > 10e-6:
         try:
-            grad_1, grad_2 = grads(inp, layer_1, layer_2, out, 1)
-            layer_1 += grad_1
-            layer_2 += grad_2
-            mse_val = mse(inp, layer_1, layer_2, out)
+            nn.do_step(inp, out, 0.01)
+            mse_val = nn.mse(inp, out)
+            i += 1
             print(mse_val)
         except KeyboardInterrupt:
             break
-    print(layer_1)
-    print(layer_2)
-    print(compute_f(np.array([[0.5136712627291826, 0.8779685080171047]]), layer_1, layer_2))
+    print(nn.predict(inp))
 
 
 if __name__ == '__main__':
