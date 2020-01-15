@@ -71,13 +71,9 @@ class NeuralNetwork:
             deltas[0][:, self.layers[0].last_zero_indexes] = 0
 
         for i in range(self.layers_count() - 1):
-            # print("i:", i)
             new_delta = outs[-i - 2] * (1 - outs[-i - 2]) * np.dot(self.layers[-i - 1].array,
                                                                    deltas[-1].swapaxes(0, 1)).swapaxes(0, 1)
-            # print([(x.shape, x.last_zero_indexes) for x in self.layers])
             if self.layers[i].dropout_probability > 0.:
-                # print(new_delta.shape[1])
-                # print(len(self.layers[-i - 1].last_zero_indexes))
                 new_delta[:, self.layers[-i - 1].last_zero_indexes] = 0
             deltas.append(new_delta)
         grads = []
@@ -99,7 +95,6 @@ class NeuralNetwork:
             try:
                 self.do_step(train_input, train_output, learning_rate)
                 mse_val = self.mse(train_input, train_output)
-                print(mse_val)
             except KeyboardInterrupt:
                 print("Stopped by user")
                 break
