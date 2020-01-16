@@ -1,22 +1,66 @@
 import math
-from typing import List
+from enum import Enum
+from typing import List, Tuple
 
 import numpy as np
 
 
 def sigmoid(x):
-    return 1 / (1 + math.exp(-x))
+    return 1 / (1 + math.e ** (np.dot(x, -1)))
 
 
-array_sigmoid = np.vectorize(sigmoid)
+def sigmoid_derivative(sigmoid_value, _):
+    return sigmoid_value * (1 - sigmoid_value)
+
+
+def softmax(x):
+    exp = math.e ** x
+    return np.transpose((np.transpose(exp) / np.transpose(exp.sum(axis=1))))
+
+
+def softmax_derivative(softmax_value, _):
+    return softmax_value * (1 - softmax_value)
+
+
+def relu(x):
+    return np.where(x > 0., x, 0.)
+
+
+def relu_derivative(_, x):
+    return np.where(x <= 0., 0., 1.)
+
+
+class ActivationFunction(Enum):
+    SIGMOID = 1
+    SOFTMAX = 2
+    RELU = 3
+
+
+ACTIVATION_FUNCTIONS = {
+    ActivationFunction.SIGMOID: (sigmoid, sigmoid_derivative),
+    ActivationFunction.SOFTMAX: (softmax, softmax_derivative),
+    ActivationFunction.RELU: (relu, relu_derivative),
+}
 
 
 class Layer:
-    def __init__(self, array, dropout_probability):
+    def __init__(
+            self,
+            array: np.ndarray = None,
+            shape: Tuple[int, int] = None,
+            dropout_probability: float = 0,
+            activation_function: ActivationFunction = ActivationFunction.SIGMOID
+    ):
         self.array = array
-        self.shape = array.shape
+        if array is None:
+            self.array = np.random.rand(*shape)
+            self.shape = shape
+        else:
+            self.shape = array.shape
         self.dropout_probability = dropout_probability
         self.last_zero_indexes = []
+        self.activation_function = activation_function
+        self.activate, self.derivative_activate = ACTIVATION_FUNCTIONS[activation_function]
 
     def zero_random_rows(self):
         zero_indexes = [x < self.dropout_probability for x in np.random.random(self.array.shape[0])]
@@ -24,19 +68,33 @@ class Layer:
         return zero_indexes
 
     def copy(self):
-        return Layer(self.array.copy(), self.dropout_probability)
+        return Layer(self.array.copy(), None, self.dropout_probability, self.activation_function)
 
     def __repr__(self):
-        return f"Layer(array={self.array}, dop={self.dropout_probability}, lzi={self.last_zero_indexes})"
+        return f"Layer(array={self.array}, " \
+               f"dop={self.dropout_probability}, " \
+               f"lzi={self.last_zero_indexes}, " \
+               f"af={self.activation_function})"
 
 
 class NeuralNetwork:
-    def __init__(self, layer_sizes=None, dropout_probability=0.):
+    def __init__(
+            self,
+            layer_sizes: List[int] = None,
+            dropout_probability: float = 0.,
+            activation_function: ActivationFunction = ActivationFunction.SIGMOID
+    ):
         self.layers: List[Layer] = []
         if layer_sizes is None:
             return
         for i in range(len(layer_sizes) - 1):
-            self.add_layer(Layer(np.random.rand(layer_sizes[i], layer_sizes[i + 1]), dropout_probability))
+            new_later = Layer(
+                np.random.rand(layer_sizes[i], layer_sizes[i + 1]),
+                None,
+                dropout_probability,
+                activation_function
+            )
+            self.add_layer(new_later)
 
     def add_layer(self, layer: Layer):
         if self.layers and self.layers[-1].shape[1] != layer.shape[0]:
@@ -50,7 +108,7 @@ class NeuralNetwork:
     def predict(self, inp):
         out = inp
         for layer in self.layers:
-            out = array_sigmoid(np.dot(out, layer.array))
+            out = layer.activate(np.dot(out, layer.array))
         return out
 
     def layers_count(self):
@@ -58,6 +116,7 @@ class NeuralNetwork:
 
     def get_gradients(self, train_input, train_output):
         outs = [train_input]
+        sums = [train_input]
         for layer in self.layers:
             if layer.dropout_probability > 0.:
                 final_layer = layer.copy()
@@ -65,14 +124,24 @@ class NeuralNetwork:
             else:
                 final_layer = layer
                 layer.last_zero_indexes = []
-            outs.append(array_sigmoid(np.dot(outs[-1], final_layer.array)))
-        deltas = [-outs[-1] * (1 - outs[-1]) * (train_output - outs[-1])]
+            new_sum = np.dot(outs[-1], final_layer.array)
+            sums.append(new_sum)
+            outs.append(layer.activate(new_sum))
+
+        deltas = [-self.layers[-1].derivative_activate(outs[-1], sums[-1]) * (train_output - outs[-1])]
         if self.layers[0].dropout_probability > 0.:
             deltas[0][:, self.layers[0].last_zero_indexes] = 0
 
         for i in range(self.layers_count() - 1):
-            new_delta = outs[-i - 2] * (1 - outs[-i - 2]) * np.dot(self.layers[-i - 1].array,
-                                                                   deltas[-1].swapaxes(0, 1)).swapaxes(0, 1)
+            new_delta = \
+                self.layers[-i - 1].derivative_activate(
+                    outs[-i - 2],
+                    sums[-i - 2]
+                ) * np.dot(
+                    self.layers[-i - 1].array,
+                    deltas[-1].swapaxes(0, 1)
+                ).swapaxes(0, 1)
+
             if self.layers[i].dropout_probability > 0.:
                 new_delta[:, self.layers[-i - 1].last_zero_indexes] = 0
             deltas.append(new_delta)
@@ -100,41 +169,9 @@ class NeuralNetwork:
                 break
 
 
-ARRAY_1 = np.array([
-    [0.2, 0.3, 0.4],
-    [0.7, -0.2, -0.1],
-])
-
-ARRAY_2 = np.array([
-    [0.37431857, -0.4050446,  -2.757726,  0.234686],
-    [10, -0.4266498,   0.45890669, -1.0897836],
-    [-0.14667352, -2.1691296, -0.02718759,  0.14773357]
-])
-
-ARRAY_3 = np.array([
-    [0.3, 0.1],
-    [-2., 0.2],
-    [0.1, -3.1],
-    [-0.9, 1.1],
-])
-
-
-def gen_out_by_arrays(arrays, inp):
-    nn = NeuralNetwork()
-    nn.add_layers([Layer(array, 0.) for array in arrays])
-    return nn.predict(inp)
-
-
 def main():
-    train_input = np.random.rand(1000, 2)
-    train_output = gen_out_by_arrays([ARRAY_1, ARRAY_2, ARRAY_3], train_input)
-    nn = NeuralNetwork([2, 3, 4, 2])
-    nn.layers[2].dropout_probability = 0.3
-    nn.learn(train_input, train_output, 0.1, 10e-5)
-
-    test_input = np.random.rand(100, 2)
-    test_output = gen_out_by_arrays([ARRAY_1, ARRAY_2, ARRAY_3], test_input)
-    print(nn.mse(test_input, test_output))
+    nn = NeuralNetwork([4, 4, 4], activation_function=ActivationFunction.SIGMOID)
+    nn.add_layer(Layer(shape=(4, 4), activation_function=ActivationFunction.SOFTMAX))
 
 
 if __name__ == '__main__':
