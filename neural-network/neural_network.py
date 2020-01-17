@@ -112,7 +112,6 @@ class NeuralNetwork:
             self.do_epoch(train_input, train_output, learning_rate, batch_size)
             accuracy_val = self.accuracy(train_input, train_output)
             mse_val = self.mse(train_input, train_output)
-            print("{:10.6f} {:10.3f} {:10.3f}".format(mse_val, accuracy_val, learning_rate))
             if np.isnan(mse_val):
                 print("Escape due to nan!")
                 raise Exception("nan!")
