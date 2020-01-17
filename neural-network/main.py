@@ -10,38 +10,38 @@ TEST_DATASET_FILE_PATH = "dataset/mnist_test.csv"
 
 
 def perform_one_layer_nn(train_input, train_output, test_input, test_output):
-    print('perform one layer neural network [784 x 10] with softmax at the end')
+    print('Perform one layer neural network [784 x 10] with softmax at the end')
     nn = NeuralNetwork([784, 10], activation_function=ActivationFunction.SOFTMAX)
 
     start = time()
-    print('start training')
+    print('Start training')
     nn.learn(train_input, train_output, 0.01, 0.9, 100)
     val = time() - start
-    print("time", val)
+    print("Time", val)
 
-    print("mse: ", nn.mse(test_input, test_output))
-    print("accuracy: ", nn.accuracy(test_input, test_output))
+    print("Mse: ", nn.mse(test_input, test_output))
+    print("Accuracy: ", nn.accuracy(test_input, test_output))
     return val
 
 
 def perform_two_layers_nn(train_input, train_output, test_input, test_output):
-    print('perform two layers neural network [784 x 300 x 10] with sigmoid at start softmax at the end')
+    print('Perform two layers neural network [784 x 300 x 10] with sigmoid at start and softmax at the end')
     nn = NeuralNetwork()
     nn.add_layer(Layer(shape=(784, 300), activation_function=ActivationFunction.SIGMOID))
     nn.add_layer(Layer(shape=(300, 10), activation_function=ActivationFunction.SOFTMAX))
 
     start = time()
-    print('start pre-training')
+    print('Start pre-training')
     nn.learn(train_input[:100], train_output[:100], 0.01, 0.49, 100)
 
-    print('start main training')
+    print('Start main training')
     nn.learn(train_input, train_output, 0.1, 0.7, 100)
     nn.learn(train_input, train_output, 0.01, 0.8, 100)
     val = time() - start
-    print("time:", val)
+    print("Time:", val)
 
-    print("mse: ", nn.mse(test_input, test_output))
-    print("accuracy: ", nn.accuracy(test_input, test_output))
+    print("Mse: ", nn.mse(test_input, test_output))
+    print("Accuracy: ", nn.accuracy(test_input, test_output))
     return val
 
 
