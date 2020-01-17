@@ -14,7 +14,7 @@ def perform_one_layer_nn(train_input, train_output, test_input, test_output):
     nn = NeuralNetwork([784, 10], activation_function=ActivationFunction.SOFTMAX)
 
     start = time()
-    print('start pre-training')
+    print('start training')
     nn.learn(train_input, train_output, 0.01, 0.9, 100)
     val = time() - start
     print("time", val)
