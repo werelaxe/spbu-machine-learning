@@ -16,7 +16,7 @@ class Layer:
     ):
         self.array = array
         if array is None:
-            self.array = np.random.rand(*shape) if random_weights else np.zeros(shape)
+            self.array = np.random.rand(*shape) if random_weights else np.full(shape, 0.)
             self.shape = shape
         else:
             self.shape = array.shape

@@ -4,7 +4,7 @@ from typing import List
 import numpy as np
 
 from activation_functions import ActivationFunction
-from dataset_ops import transform_to_digit
+from dataset_ops import transform_to_digit, unison_shuffled_copies
 from layer import Layer
 
 
@@ -17,6 +17,7 @@ class NeuralNetwork:
             random_weights: bool = False
     ):
         self.layers: List[Layer] = []
+        self.results = []
         if layer_sizes is None:
             return
         for i in range(len(layer_sizes) - 1):
@@ -64,8 +65,10 @@ class NeuralNetwork:
             sums.append(new_sum)
             outs.append(layer.activate(new_sum))
 
+        # print(self.layers[-1].shape)
         deltas = [-self.layers[-1].derivative_activate(outs[-1], sums[-1]) * (train_output - outs[-1])]
-        for i in range(self.layers_count() - 1):
+        # print("deltas")
+        for i in range(self.layers_count()):
             new_delta = \
                 self.layers[-i - 1].derivative_activate(
                     outs[-i - 2],
@@ -74,23 +77,38 @@ class NeuralNetwork:
                     self.layers[-i - 1].array,
                     deltas[-1].swapaxes(0, 1)
                 ).swapaxes(0, 1)
-
+            # print(new_delta.sum())
             if self.layers[i].dropout_probability > 0.:
                 new_delta[:, self.layers[-i - 1].last_zero_indexes] = 0
             deltas.append(new_delta)
 
         if self.layers[-1].dropout_probability > 0.:
             deltas[0][:, self.layers[-1].last_zero_indexes] = 0
+        deltas = deltas[::-1]
 
         grads = []
+        # print([delta.shape for delta in deltas])
+        # print([layer.array.shape for layer in self.layers])
+        # print([out.shape for out in outs])
+        # print("nn")
+        # print(outs[0])
+        # print(":", deltas[-2].shape)
+        # print(self.layers_count())
+
+        # print("sums")
         for i in range(self.layers_count()):
-            grads.append(np.dot(outs[i].swapaxes(0, 1), deltas[-i - 1]))
+            # print(outs[i].shape, deltas[i + 1].shape)
+            # print(np.dot(outs[i].swapaxes(0, 1), deltas[i + 1]).shape)
+            # print(outs[i].sum(), deltas[i + 1].sum())
+            # exit(1)
+            grads.append(np.dot(outs[i].swapaxes(0, 1), deltas[i + 1]))
+        # print(grads[0].sum())
         return grads
 
     def do_step(self, train_input, train_output, learning_rate):
         grads = self.get_gradients(train_input, train_output)
         for i in range(self.layers_count()):
-            self.layers[i].array += -learning_rate * grads[i]
+            self.layers[i].array -= learning_rate * grads[i]
 
     def do_epoch(self, train_input, train_output, learning_rate, batch_size):
         for i in range(train_input.shape[0] // batch_size):
@@ -109,9 +127,20 @@ class NeuralNetwork:
     def learn(self, train_input, train_output, learning_rate, required_accuracy, batch_size):
         accuracy_val = self.accuracy(train_input, train_output)
         while required_accuracy > accuracy_val:
-            self.do_epoch(train_input, train_output, learning_rate, batch_size)
-            accuracy_val = self.accuracy(train_input, train_output)
-            mse_val = self.mse(train_input, train_output)
+            a, b = unison_shuffled_copies(train_input, train_output)
+
+            self.do_epoch(a, b, learning_rate, batch_size)
+            accuracy_val = self.accuracy(a, b)
+            mse_val = self.mse(a, b)
+            self.results.append((mse_val, accuracy_val))
+            if len(self.results) >= 2000:
+                return
+
+            print(
+                "{:10.10f} {:10.3f} {:10.3f} {:10.3f}".format(mse_val, accuracy_val, learning_rate, len(self.results)))
             if np.isnan(mse_val):
                 print("Escape due to nan!")
                 raise Exception("nan!")
+
+# [0.818019830883675, 0.7050510109122166, 0.7042431556688695, 0.7021540849842014, 0.6955953420712446, 0.5993502440352968, 0.6070372371788634, 0.7881539052884421, 0.8966104658626535, 9999.0]
+# [0.8180961684707911, 0.7049499921293247, 0.702475528964403, 0.6977982822789863, 0.6966382725772172, 0.5786471554798068, 0.713236073567653, 0.8856567279279873, 0.9033428516754273, 9999.0]

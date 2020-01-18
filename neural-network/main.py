@@ -1,4 +1,4 @@
-from time import time
+import numpy as np
 
 from activation_functions import ActivationFunction
 from dataset_ops import read_dataset
@@ -9,58 +9,91 @@ TRAIN_DATASET_FILE_PATH = "dataset/mnist_train.csv"
 TEST_DATASET_FILE_PATH = "dataset/mnist_test.csv"
 
 
-def perform_one_layer_nn(train_input, train_output, test_input, test_output):
-    print('Perform one layer neural network [784 x 10] with softmax at the end')
-    nn = NeuralNetwork([784, 10], activation_function=ActivationFunction.SOFTMAX)
+# def perform_one_layer_nn(train_input, train_output, test_input, test_output):
+#     print('Perform one layer neural network [784 x 10] with softmax at the end')
+#     nn = NeuralNetwork([196, 10], activation_function=ActivationFunction.SOFTMAX)
+#
+#     start = time()
+#     print('Start training')
+#     nn.learn(train_input, train_output, 0.01, 0.9, 100)
+#     val = time() - start
+#     print("Time", val)
+#
+#     print("Mse: ", nn.mse(test_input, test_output))
+#     print("Accuracy: ", nn.accuracy(test_input, test_output))
+#     return val
 
-    start = time()
-    print('Start training')
-    nn.learn(train_input, train_output, 0.01, 0.9, 100)
-    val = time() - start
-    print("Time", val)
 
-    print("Mse: ", nn.mse(test_input, test_output))
-    print("Accuracy: ", nn.accuracy(test_input, test_output))
-    return val
-
-
-def perform_two_layers_nn(train_input, train_output, test_input, test_output):
-    print('Perform two layers neural network [784 x 300 x 10] with sigmoid at start and softmax at the end')
+def perform_two_layers_nn(train_input, train_output, test_input, test_output, layer_size):
+    np.seterr(over='raise')
     nn = NeuralNetwork()
-    nn.add_layer(Layer(shape=(784, 300), activation_function=ActivationFunction.SIGMOID))
-    nn.add_layer(Layer(shape=(300, 10), activation_function=ActivationFunction.SOFTMAX))
+    nn.add_layer(Layer(shape=(196, layer_size), activation_function=ActivationFunction.SIGMOID))
+    nn.add_layer(Layer(shape=(layer_size, 10), activation_function=ActivationFunction.SOFTMAX))
 
-    start = time()
-    print('Start pre-training')
-    nn.learn(train_input[:100], train_output[:100], 0.01, 0.49, 100)
-
-    print('Start main training')
-    nn.learn(train_input, train_output, 0.1, 0.7, 100)
-    nn.learn(train_input, train_output, 0.01, 0.8, 100)
-    val = time() - start
-    print("Time:", val)
-
-    print("Mse: ", nn.mse(test_input, test_output))
-    print("Accuracy: ", nn.accuracy(test_input, test_output))
-    return val
+    try:
+        nn.learn(train_input, train_output, 0.01, 0.4, 100)
+        nn.learn(train_input, train_output, 0.1, 0.9, 100)
+    except BaseException as e:
+        print(e)
+    import matplotlib.pyplot as plt
+    plt.plot(nn.results)
+    plt.show()
+    return nn.mse(train_input, train_output)
 
 
 def main():
-    train_input, train_output = read_dataset(TRAIN_DATASET_FILE_PATH)
-    test_input, test_output = read_dataset(TEST_DATASET_FILE_PATH)
+    train_input, train_output = read_dataset(TRAIN_DATASET_FILE_PATH, 6000)
+    test_input, test_output = read_dataset(TEST_DATASET_FILE_PATH, 100)
 
     datasets = [train_input, train_output, test_input, test_output]
 
-    perform_one_layer_nn(*datasets)
+    # perform_one_layer_nn(*datasets)
     # time 1.6419239044189453
     # mse:  0.12406724153194079
     # accuracy:  0.9035
 
-    perform_two_layers_nn(*datasets)
-    # time: 62.20328179995219
-    # mse:  0.26328470695435285
-    # accuracy:  0.7973
+    perform_two_layers_nn(*datasets, 67)
+
+    # results = []
+    # for _ in range(3):
+    #     results.append([perform_two_layers_nn(*datasets, i) for i in range(50, 71)])
+    # for line in results:
+    #     print(line)
 
 
 if __name__ == '__main__':
     main()
+
+# a = np.array([
+# [0.697055425251153, 0.5164164422053154, 0.6955750799827356, 0.476979426614951, 0.6958201295434372, 0.5071985821467946, 0.6378367688763493, 0.5230881272987491, 0.6911291362500699, 0.5071095671701287, 0.6010006690354398, 0.49602622515635386, 0.593826782029979, 0.48303830055340274, 0.9024112404085652, 9999.0, 0.6172748877151358, 0.4435930075966267, 0.6247790178416133, 0.4712012148043258, 0.6201936644304251],
+# [0.6954288920846937, 0.5224415335328891, 0.6947572164210288, 0.5272542599668227, 0.6952320904297035, 0.5080682795044222, 0.6028374950514499, 0.5062421549448131, 0.5802915176115216, 0.4670278847910875, 0.6230464189771024, 0.4794062573788131, 0.6088830825041439, 0.45020720946140314, 0.9014070504411422, 0.49633782102591906, 0.6647621622970279, 0.4751175513839877, 0.6184455748203079, 0.4748092472656031, 0.6315461571080216],
+# [0.6954434407293777, 0.4866522943268086, 0.6964155492324688, 0.5200283560353565, 0.6964686591085474, 0.5185497907397904, 0.6960522638299359, 0.5193670480314935, 0.6116681064847164, 0.4971228183840078, 0.609460690222418, 0.44493157026839814, 0.6178466949041755, 0.5198070698922891, 0.9009838175098444, 0.4793154345229319, 0.6131961759263461, 0.4508503641758148, 0.6406844689563108, 0.46514884845801313, 0.6057109050700441],
+# [0.6954434407293777, 0.4866522943268086, 0.6964155492324688, 0.5200283560353565, 0.6964686591085474, 0.5185497907397904, 0.6960522638299359, 0.5193670480314935, 0.6116681064847164, 0.4971228183840078, 0.609460690222418, 0.44493157026839814, 0.6178466949041755, 0.5198070698922891, 0.9009838175098444, 0.4793154345229319, 0.6131961759263461, 0.4508503641758148, 0.6406844689563108, 0.46514884845801313, 0.6057109050700441],
+# [0.6954434407293777, 0.4866522943268086, 0.6964155492324688, 0.5200283560353565, 0.6964686591085474, 0.5185497907397904, 0.6960522638299359, 0.5193670480314935, 0.6116681064847164, 0.4971228183840078, 0.609460690222418, 0.44493157026839814, 0.6178466949041755, 0.5198070698922891, 0.9009838175098444, 0.4793154345229319, 0.6131961759263461, 0.4508503641758148, 0.6406844689563108, 0.46514884845801313, 0.6057109050700441]
+# ])
+# for x, y in sorted(list(enumerate(np.average(a, axis=0))), key=lambda x: x[1]):
+#     print(x + 50, y)
+
+"""
+67 0.45425233030161183
+61 0.46204543866807235
+69 0.46829140148879367
+59 0.4931011814226479
+63 0.49853334393833454
+51 0.4997629717437261
+53 0.5128637509375686
+55 0.5141832467741175
+57 0.5174862852676084
+60 0.6104858317359593
+62 0.61124998984933
+70 0.6137745073497157
+58 0.6212849946631482
+66 0.6243251155582404
+68 0.6330555999061708
+56 0.6657662110835214
+50 0.6957629279047959
+52 0.6959157888202342
+54 0.6960916394597566
+64 0.9013539486758482
+65 2000.1868568249188
+"""
