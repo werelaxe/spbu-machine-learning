@@ -52,11 +52,8 @@ def learn(xs, ys, k, learning_rate, iters_count, epoch_count, batch_size):
     rmse_val = 99999999999
     for iter_index in range(iters_count):
         xs, ys = shuffle(xs, ys)
-        number_of_batches = xs.shape[0] // batch_size
 
-        for batch_index in range(number_of_batches):
-            batch_xs, batch_ys = extract_batch(xs, ys, batch_index, batch_size)
-            w0, vector_w, matrix_v = do_step(batch_xs, batch_ys, vector_w, w0, matrix_v, learning_rate)
+        w0, vector_w, matrix_v = do_step(xs, ys, vector_w, w0, matrix_v, learning_rate)
         rmse_val = rmse(vector_w, w0, matrix_v, xs, ys)
         if rmse_val < 10e-5:
             break
