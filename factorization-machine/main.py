@@ -69,7 +69,7 @@ def main():
     rmses = []
     for fold_index in range(FOLDS_COUNT):
         train_xs, train_ys, test_xs, test_ys = split_data_to_fold(xs, ys, 0)
-        vector_w, w0, matrix_v, rmse_val = learn(train_xs, train_ys, 3, 0.01, 3, 1, train_xs.shape[0])
+        vector_w, w0, matrix_v, rmse_val = learn(train_xs, train_ys, 3, 0.01, 10, 1, train_xs.shape[0])
         final_fold_rmse = rmse(vector_w, w0, matrix_v, test_xs, test_ys)
         print("final rmse:", final_fold_rmse)
         rmses.append(final_fold_rmse)
