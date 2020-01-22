@@ -3,7 +3,7 @@ import random
 import numpy as np
 from sklearn.utils import shuffle
 
-from dataset_reader import read_dataset
+from dataset_reader import read_dataset, split_data_to_fold, FOLDS_COUNT
 
 FACTORS_COUNT = 3
 
@@ -59,8 +59,6 @@ def learn(xs, ys, k, learning_rate, iters_count, epoch_count, batch_size):
                 batch_xs, batch_ys = extract_batch(xs, ys, batch_index, batch_size)
                 w0, vector_w, matrix_v = do_step(batch_xs, batch_ys, vector_w, w0, matrix_v, learning_rate)
         rmse_val = rmse(vector_w, w0, matrix_v, xs, ys)
-        if rmse_val < 1.3:
-            break
         print(rmse_val)
 
     return vector_w, w0, matrix_v, rmse_val
@@ -68,8 +66,15 @@ def learn(xs, ys, k, learning_rate, iters_count, epoch_count, batch_size):
 
 def main():
     xs, ys, encoder = read_dataset()
-    vector_w, w0, matrix_v, rmse_val = learn(xs, ys, 3, 0.01, 1000, 1, xs.shape[0])
-    print(rmse(vector_w, w0, matrix_v, xs, ys))
+    rmses = []
+    for fold_index in range(FOLDS_COUNT):
+        train_xs, train_ys, test_xs, test_ys = split_data_to_fold(xs, ys, 0)
+        vector_w, w0, matrix_v, rmse_val = learn(train_xs, train_ys, 3, 0.01, 3, 1, train_xs.shape[0])
+        final_fold_rmse = rmse(vector_w, w0, matrix_v, test_xs, test_ys)
+        print("final rmse:", final_fold_rmse)
+        rmses.append(final_fold_rmse)
+    print(rmses)
+    print(np.average(rmses))
 
 
 if __name__ == '__main__':
