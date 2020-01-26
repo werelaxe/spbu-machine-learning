@@ -219,8 +219,5 @@ int main () {
 
     out_file.close();
     dataset_file.close();
-    for (qwd: s.rows()) {
-
-    }
     return 0;
 }
