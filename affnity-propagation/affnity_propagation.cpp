@@ -50,7 +50,8 @@ void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<do
     pair<double, double> zero_pair(0., 0.);
     pair<double, double> default_maxes(-(double) INFINITY, -(double) INFINITY);
 
-    cout << 1 << endl;
+    cout << "1 ";
+    cout.flush();
 
     for (auto& row: s.data) {
         for (auto& pair: row.second) {
@@ -78,7 +79,8 @@ void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<do
 //        cout << i << " " << double_maxes[i].first << " " << double_maxes[i].second << endl;
 //    }
 
-    cout << 2 << endl;
+    cout << "2 ";
+    cout.flush();
 
 //    exit(0);
 //    int count = 0;
@@ -104,7 +106,9 @@ void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<do
 
     unordered_map<int, double> sums;
 
-    cout << 3 << endl;
+    cout << "3 ";
+    cout.flush();
+
     // pre-compute sums for (2)
     for (auto& row: s.data) {
         for (auto& pair: row.second) {
@@ -115,7 +119,9 @@ void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<do
         }
     }
 
-    cout << 4 << endl;
+    cout << "4 ";
+    cout.flush();
+
     // update matrix A (2)
     for (auto& row: s.data) {
         for (auto& pair: row.second) {
@@ -132,7 +138,9 @@ void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<do
 
     sums.clear();
 
-    cout << 5 << endl;
+    cout << "5 ";
+    cout.flush();
+
     // pre-compute sums for (3)
     for (auto&  row: s.data) {
         for (auto& pair: row.second) {
@@ -147,6 +155,8 @@ void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<do
     }
 
     cout << 6 << endl;
+    cout.flush();
+
     for (int k = 0; k < size; ++k) {
         a.set(k, k, sums[k]);
     }
@@ -178,13 +188,14 @@ int main () {
     int size = -1;
     auto start = time(nullptr);
 
-    fstream dataset_file("../edges.txt", std::ios_base::in);
+    fstream dataset_file("edges.txt", std::ios_base::in);
     int x;
     bool flag = false;
     int buff = -1;
 
     int count = 0;
 
+    unordered_set<int> users;
     while (dataset_file >> x) {
         size = max(size, x);
         if (flag) {
@@ -200,18 +211,19 @@ int main () {
     cout << "Size: " << size << endl;
 
     for (int i = 0; i < size; ++i) {
-        s.set(i, i, -1.5);
+        s.set(i, i, -2.);
     }
 
     cout << "Start AP" << endl;
 
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 10; ++i) {
+        cout << "Iteration " << i << endl;
         iteration(a, s, r, size);
     }
     auto result = get_result(a, s, r, size);
 
-    fstream out_file("../out.txt", ios_base::out);
 
+    fstream out_file("clusters.txt", ios_base::out);
     for (auto& pair: result) {
         out_file << pair.first << " ";
     }

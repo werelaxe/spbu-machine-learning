@@ -3,4 +3,5 @@ project(affnity_propagation)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(affnity_propagation main.cpp)
+add_executable(affnity_propagation affnity_propagation.cpp)
+
