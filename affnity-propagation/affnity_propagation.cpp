@@ -45,14 +45,15 @@ void print_dict(SparseMatrix<double>& s, int sz) {
 }
 
 
-void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<double>& r, int size) {
-    unordered_map<int, pair<double, double>> double_maxes;
-    pair<double, double> zero_pair(0., 0.);
-    pair<double, double> default_maxes(-(double) INFINITY, -(double) INFINITY);
+pair<double, double> zero_pair(0., 0.);
+pair<double, double> default_maxes(-(double) INFINITY, -(double) INFINITY);
 
+
+void update_matrix_r(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<double>& r, unordered_map<int, pair<double, double>>& double_maxes) {
     cout << "1 ";
     cout.flush();
 
+    // pre-compute maxes for matrix R
     for (auto& row: s.data) {
         for (auto& pair: row.second) {
             int j = row.first;
@@ -64,7 +65,6 @@ void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<do
             if (maxes == zero_pair) {
                 maxes = default_maxes;
             }
-//            cout << "(" << i << ", " << k << ") ev: " << edge_value << ", fm: " << maxes.first << ", sm: " << maxes.second << endl;
 
             if (edge_value >= maxes.first) {
                 maxes.second = maxes.first;
@@ -75,16 +75,10 @@ void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<do
         }
     }
 
-//    for (int i = 0; i < 10; ++i) {
-//        cout << i << " " << double_maxes[i].first << " " << double_maxes[i].second << endl;
-//    }
-
     cout << "2 ";
     cout.flush();
 
-//    exit(0);
-//    int count = 0;
-    // update matrix R (1)
+    // update matrix R
     for (auto& row: s.data) {
         for (auto& pair: row.second) {
             int i = row.first;
@@ -103,13 +97,14 @@ void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<do
             r.set(i, k, pair.second - max_value);
         }
     }
+}
 
-    unordered_map<int, double> sums;
 
+void update_matrix_a(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<double>& r, unordered_map<int, double>& sums) {
     cout << "3 ";
     cout.flush();
 
-    // pre-compute sums for (2)
+    // pre-compute sums for matrix A
     for (auto& row: s.data) {
         for (auto& pair: row.second) {
             int j = row.first;
@@ -122,7 +117,7 @@ void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<do
     cout << "4 ";
     cout.flush();
 
-    // update matrix A (2)
+    // update matrix A
     for (auto& row: s.data) {
         for (auto& pair: row.second) {
             int i = row.first;
@@ -135,13 +130,14 @@ void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<do
             a.set(i, k,min(0., r.get(k, k) + sums[k] - r.get(i, k) - r.get(k, k)));
         }
     }
+}
 
-    sums.clear();
 
+void update_matrix_a_diag(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<double>& r, unordered_map<int, double>& sums, int size) {
     cout << "5 ";
     cout.flush();
 
-    // pre-compute sums for (3)
+    // pre-compute sums for diag of matrix A
     for (auto&  row: s.data) {
         for (auto& pair: row.second) {
             int j = row.first;
@@ -157,9 +153,25 @@ void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<do
     cout << 6 << endl;
     cout.flush();
 
+    // update diag of matrix A
     for (int k = 0; k < size; ++k) {
         a.set(k, k, sums[k]);
     }
+}
+
+
+void iteration(SparseMatrix<double>& a, SparseMatrix<double>& s, SparseMatrix<double>& r, int size) {
+    unordered_map<int, pair<double, double>> double_maxes;
+
+    update_matrix_r(a, s, r, double_maxes);
+
+    unordered_map<int, double> sums;
+
+    update_matrix_a(a, s, r, sums);
+
+    sums.clear();
+
+    update_matrix_a_diag(a, s, r, sums, size);
 }
 
 
@@ -182,20 +194,16 @@ vector<pair<int, double>> get_result(SparseMatrix<double>& a, SparseMatrix<doubl
 }
 
 
-int main () {
-    SparseMatrix<double> a, s, r;
-
+int read_dataset(const char* dataset_filename, SparseMatrix<double>& s) {
     int size = -1;
-    auto start = time(nullptr);
 
-    fstream dataset_file("edges.txt", std::ios_base::in);
+    fstream dataset_file(dataset_filename, std::ios_base::in);
     int x;
     bool flag = false;
     int buff = -1;
 
     int count = 0;
 
-    unordered_set<int> users;
     while (dataset_file >> x) {
         size = max(size, x);
         if (flag) {
@@ -209,27 +217,45 @@ int main () {
 
     size++;
     cout << "Size: " << size << endl;
+    dataset_file.close();
+    return size;
+}
 
+
+void set_self_similarity(SparseMatrix<double>& s, int size, double value) {
     for (int i = 0; i < size; ++i) {
-        s.set(i, i, -2.);
+        s.set(i, i, value);
     }
+}
+
+
+void write_result_clusters(const char* out_filename, vector<pair<int, double>>& result) {
+    fstream out_file(out_filename, ios_base::out);
+    for (auto& pair: result) {
+        out_file << pair.first << " ";
+    }
+    out_file << endl;
+    out_file.close();
+}
+
+
+int main () {
+    SparseMatrix<double> a, s, r;
+
+    auto start = time(nullptr);
+
+    int size = read_dataset("edges.txt", s);
+    set_self_similarity(s, size, -2.);
 
     cout << "Start AP" << endl;
 
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 1; ++i) {
         cout << "Iteration " << i << endl;
         iteration(a, s, r, size);
     }
     auto result = get_result(a, s, r, size);
 
+    write_result_clusters("clusters.txt", result);
 
-    fstream out_file("clusters.txt", ios_base::out);
-    for (auto& pair: result) {
-        out_file << pair.first << " ";
-    }
-    out_file << endl;
-
-    out_file.close();
-    dataset_file.close();
     return 0;
 }
