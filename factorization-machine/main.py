@@ -59,17 +59,21 @@ def learn(xs, ys, k, learning_rate, iters_count, epoch_count, batch_size):
                 batch_xs, batch_ys = extract_batch(xs, ys, batch_index, batch_size)
                 w0, vector_w, matrix_v = do_step(batch_xs, batch_ys, vector_w, w0, matrix_v, learning_rate)
         rmse_val = rmse(vector_w, w0, matrix_v, xs, ys)
-        print(rmse_val)
+        print("{}: {}".format(iter_index, rmse_val))
 
     return vector_w, w0, matrix_v, rmse_val
 
 
 def main():
     xs, ys, encoder = read_dataset()
+    print("Start learning")
+
     rmses = []
     for fold_index in range(FOLDS_COUNT):
-        train_xs, train_ys, test_xs, test_ys = split_data_to_fold(xs, ys, 0)
-        vector_w, w0, matrix_v, rmse_val = learn(train_xs, train_ys, 3, 0.01, 10, 1, train_xs.shape[0])
+        train_xs, train_ys, test_xs, test_ys = split_data_to_fold(xs, ys, fold_index)
+
+        vector_w, w0, matrix_v, rmse_val = learn(train_xs, train_ys, 3, 0.016, 100, 10, train_xs.shape[0])
+
         final_fold_rmse = rmse(vector_w, w0, matrix_v, test_xs, test_ys)
         print("final rmse:", final_fold_rmse)
         rmses.append(final_fold_rmse)
