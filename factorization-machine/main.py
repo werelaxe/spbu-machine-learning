@@ -1,4 +1,3 @@
-import random
 
 import numpy as np
 from sklearn.utils import shuffle
@@ -44,10 +43,10 @@ def extract_batch(xs, ys, batch_index, batch_size):
 
 
 def learn(xs, ys, k, learning_rate, iters_count, epoch_count, batch_size):
-    vector_w = np.random.rand(xs.shape[1], 1)
-    w0 = random.random()
+    vector_w = np.full((xs.shape[1], 1), 0.5)
+    w0 = 0.5
 
-    matrix_v = np.random.rand(xs.shape[1], k)
+    matrix_v = np.full((xs.shape[1], k), 0.5)
 
     rmse_val = 99999999999
     for iter_index in range(iters_count):
