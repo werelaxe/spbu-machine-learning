@@ -4,14 +4,14 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 
-OUT_FILENAME = "clusters.txt" 
+OUT_FILENAME = "clusters.txt"
 CHECKINS_FILENAME = "checkins.txt"
 TOP_LOCATIONS_COUNT = 10
 TEST_PERCENTAGE = 0.1
 
 
 def recall(actual, predicted):
-    return len(set(actual[:TOP_LOCATIONS_COUNT]).intersection(set(predicted)))
+    return len(set(actual[:TOP_LOCATIONS_COUNT]).intersection(set(predicted[:TOP_LOCATIONS_COUNT])))
 
 
 def read_checkins():
@@ -26,6 +26,22 @@ def read_checkins():
 def read_clusters():
     with open(OUT_FILENAME) as file:
         return list(map(int, file.read().split()))
+
+
+cache = {}
+
+
+def extract_cluster_top(cluster, top_locations_in_clusters):
+    if cluster not in cache:
+        cache[cluster] = [
+            pair[0]
+            for pair in sorted(
+                dict(top_locations_in_clusters[cluster]).items(),
+                key=lambda x: x[1],
+                reverse=True
+            )
+        ][:TOP_LOCATIONS_COUNT]
+    return cache[cluster]
 
 
 def main():
@@ -82,20 +98,13 @@ def main():
         user_locations = test_user_to_locations[test_user]
 
         if cluster in top_locations_in_clusters:
-            cluster_top = [
-                pair[0]
-                for pair in sorted(
-                    dict(top_locations_in_clusters[cluster]).items(),
-                    key=lambda x: x[1],
-                    reverse=True
-                )
-            ]
+            cluster_top = extract_cluster_top(cluster, top_locations_in_clusters)
 
             cluster_score += recall(cluster_top, user_locations)
 
         train_total_score += recall(top_train_locations, user_locations)
 
-    k = len(test_users) / TEST_PERCENTAGE
+    k = len(test_users)
 
     cluster_score /= k
     train_total_score /= k
@@ -106,4 +115,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
