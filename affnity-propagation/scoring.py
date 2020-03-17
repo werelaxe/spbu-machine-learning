@@ -11,7 +11,7 @@ TEST_PERCENTAGE = 0.1
 
 
 def recall(actual, predicted):
-    return len(set(actual[:TOP_LOCATIONS_COUNT]).intersection(set(predicted)))
+    return len(set(actual[:TOP_LOCATIONS_COUNT]).intersection(set(predicted[:TOP_LOCATIONS_COUNT])))
 
 
 def read_checkins():
@@ -26,6 +26,14 @@ def read_checkins():
 def read_clusters():
     with open(OUT_FILENAME) as file:
         return list(map(int, file.read().split()))
+
+
+def extract_top(locations_stat: dict):
+    return [
+        x[0]
+        for x in sorted(locations_stat.items(), key=lambda x: x[1])
+        [-TOP_LOCATIONS_COUNT:]
+    ]
 
 
 def main():
@@ -66,7 +74,7 @@ def main():
     for train_row in train_data:
         locations_stat[train_row[1]] += 1
 
-    top_train_locations = [x[0] for x in sorted(locations_stat.items(), key=lambda x: x[1])[-TOP_LOCATIONS_COUNT:]]
+    top_train_locations = extract_top(locations_stat)
 
     top_locations_in_clusters = defaultdict(lambda: defaultdict(int))
 
@@ -77,25 +85,21 @@ def main():
     cluster_score = 0
     train_total_score = 0
 
+    cache = {}
+
     for test_user in test_users:
         cluster = clusters[test_user]
         user_locations = test_user_to_locations[test_user]
 
         if cluster in top_locations_in_clusters:
-            cluster_top = [
-                pair[0]
-                for pair in sorted(
-                    dict(top_locations_in_clusters[cluster]).items(),
-                    key=lambda x: x[1],
-                    reverse=True
-                )
-            ]
+            if cluster not in cache:
+                cache[cluster] = recall(extract_top(top_locations_in_clusters[cluster]), user_locations)
 
-            cluster_score += recall(cluster_top, user_locations)
+            cluster_score += cache[cluster]
 
         train_total_score += recall(top_train_locations, user_locations)
 
-    k = len(test_users) / TEST_PERCENTAGE
+    k = len(test_users)
 
     cluster_score /= k
     train_total_score /= k
@@ -106,4 +110,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

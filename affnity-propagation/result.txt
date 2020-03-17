@@ -3,5 +3,5 @@ Cluster sizes top 10: [1955, 617, 469, 419, 280, 217, 169, 132, 127, 127]
 Cluster count histogram:
 44288	25037	23818	360	11	1
 1	2	3	10	100	1000
-Train total score:  0.01810457516339869
-Cluster recommendation score:  0.031437908496732024
+Train total score:  0.05247432306255836
+Cluster recommendation score:  0.1226890756302521
