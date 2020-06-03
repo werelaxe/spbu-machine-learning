@@ -116,7 +116,7 @@ def run_dqn_agent(dqn_agent, env, test=False):
                 if done:
                     rewards_window.append(episode_reward)
                     print("episode: {}, reward: {}, avg: {}".format(episode_index, episode_reward, sum(rewards_window) / len(rewards_window)))
-                    if not test and episodes_count % 100 == 0:
+                    if not test and episode_index % 100 == 0:
                         dqn_agent.save()
                         print("Model has been saved")
                     break
