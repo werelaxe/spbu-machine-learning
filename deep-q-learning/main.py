@@ -129,6 +129,9 @@ def main():
         print("pass 'train' or 'test' as agument")
         exit(1)
     cmd = sys.argv[1]
+    if cmd == 'test' and len(sys.argv) < 3:
+        print("pass the model path for testing")
+        exit(1)
     env = gym.make("LunarLander-v2")
     input_dim = env.observation_space.shape[0]
     output_dim = env.action_space.n
@@ -136,6 +139,7 @@ def main():
     if cmd == "train":
         run_dqn_agent(dqn_agent, env)
     else:
+        dqn_agent.load(sys.argv[2])
         run_dqn_agent(dqn_agent, env, True)
 
 
