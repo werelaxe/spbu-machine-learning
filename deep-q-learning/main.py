@@ -1,6 +1,6 @@
 import sys
 import warnings
-from random import sample, random, randint
+import random
 warnings.filterwarnings("ignore")
 from tensorflow.python.keras.models import load_model
 from collections import deque
@@ -47,17 +47,17 @@ class DQNAgent:
         return np.argmax(self.model.predict(np.reshape(state, (1, 8)))[0])
 
     def get_action(self, state):
-        if self.epsilon > 0.1:
+        if self.epsilon > 0.01:
             self.epsilon *= 0.99
 
-        if random() < self.epsilon:
-            return randint(0, self.action_space_dim - 1)
+        if random.random() < self.epsilon:
+            return random.randint(0, self.action_space_dim - 1)
         return self.get_best_action(state)
 
     def train_step(self):
         if len(self.buffer) < self.batch_size:
             return
-        batch = sample(self.buffer, self.batch_size)
+        batch = random.sample(self.buffer, self.batch_size)
         states = np.array([info[0] for info in batch])
         actions = np.array([info[1] for info in batch])
         next_states = np.array([info[2] for info in batch])
@@ -92,8 +92,8 @@ class DQNAgent:
 
 def run_dqn_agent(dqn_agent, env, test=False):
     try:
-        max_steps_count = 3000
-        episodes_count = 10000
+        max_steps_count = 5000
+        episodes_count = 500000
         rewards_window = deque(maxlen=100)
 
         for episode_index in range(episodes_count):
@@ -115,10 +115,13 @@ def run_dqn_agent(dqn_agent, env, test=False):
 
                 if done:
                     rewards_window.append(episode_reward)
-                    print("episode: {}, reward: {}, avg: {}".format(episode_index, episode_reward, sum(rewards_window) / len(rewards_window)))
+                    avg = sum(rewards_window) / len(rewards_window)
+                    print("episode: {}, reward: {}, avg: {}".format(episode_index, episode_reward, avg))
                     if not test and episode_index % 100 == 0:
                         dqn_agent.save()
                         print("Model has been saved")
+                        if avg >= 220:
+                            return
                     break
     except KeyboardInterrupt:
         dqn_agent.save()
