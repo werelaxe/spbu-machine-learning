@@ -3,12 +3,11 @@ import tensorflow as tf
 import numpy as np
 
 from ddpg_agent import DDPGAgent
-from env_wrappers import GymEnvWrapper
+from env_wrappers import get_pendulum_env
 
 
 def main():
-    problem = "Pendulum-v0"
-    env = GymEnvWrapper(gym.make(problem))
+    env = get_pendulum_env()
 
     max_action_val = env.action_space.high[0]
     min_action_val = env.action_space.low[0]
