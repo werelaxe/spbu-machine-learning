@@ -32,8 +32,8 @@ class DDPGAgent:
         self.critic = Critic(state_space_dim, action_space_dim, hidden_layer_size)
 
         if path_to_load is not None:
-            if os.path.exists(os.path.join(path_to_load, "actor.h5")) and \
-                    os.path.exists(os.path.join(path_to_load, "critic.h5")):
+            if os.path.exists(path_to_load + "_actor.h5") and \
+                    os.path.exists(path_to_load + "_critic.h5"):
                 self.load(path_to_load)
 
         self.target_actor = Actor(state_space_dim, action_space_dim, max_action_val, hidden_layer_size)
