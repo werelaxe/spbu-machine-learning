@@ -41,12 +41,11 @@ class DDPGAgent:
         self.actor_optimizer = tf.keras.optimizers.Adam(actor_lr)
 
     @tf.function
-    def learn(self):
-        states, actions, next_states, rewards = self.buffer.sample()
-
+    def _apply_gradients(self, states, actions, next_states, rewards):
         with tf.GradientTape() as tape:
             target_actions = self.target_actor.forward(next_states)
-            y = rewards + self.gamma * self.target_critic.forward([next_states, target_actions])
+            y = tf.cast(rewards, tf.float32) + self.gamma * self.target_critic.forward(
+                [next_states, target_actions])
             critic_value = self.critic_model.forward([states, actions])
             critic_loss = tf.math.reduce_mean(tf.math.square(y - critic_value))
 
@@ -64,6 +63,10 @@ class DDPGAgent:
         self.actor_optimizer.apply_gradients(
             zip(actor_grad, self.actor_model.model.trainable_variables)
         )
+
+    def learn(self):
+        states, actions, next_states, rewards = self.buffer.sample()
+        self._apply_gradients(states, actions, next_states, rewards)
 
     def remember_step(self, info):
         self.buffer.remember(info)
