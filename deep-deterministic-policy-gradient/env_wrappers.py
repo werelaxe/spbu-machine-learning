@@ -1,7 +1,9 @@
-from typing import Tuple
+from typing import Tuple, List
 
+import gym
 import numpy as np
 from attr import dataclass
+from dm_control import suite
 
 
 def get_state(observation):
@@ -36,15 +38,15 @@ class BasicEnvWrapper:
 
 @dataclass
 class ActionSpace:
-    low: float
-    high: float
+    low: List[float]
+    high: List[float]
     shape: Tuple[int]
 
 
 class MujocoEnvWrapper(BasicEnvWrapper):
     def _action_space(self):
         spec = self.env.action_spec()
-        return ActionSpace(spec.minimum[0], spec.maximum[0], spec.shape)
+        return ActionSpace(spec.minimum, spec.maximum, spec.shape)
 
     def __init__(self, env):
         super().__init__(env)
@@ -81,3 +83,11 @@ class GymEnvWrapper(BasicEnvWrapper):
 
     def step(self, action):
         return self.env.step(action)
+
+
+def get_pendulum_env():
+    return GymEnvWrapper(gym.make("Pendulum-v0"))
+
+
+def get_swimmer6_env():
+    return MujocoEnvWrapper(suite.load(domain_name="swimmer", task_name="swimmer6"))
