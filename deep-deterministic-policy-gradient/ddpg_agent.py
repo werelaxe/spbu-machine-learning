@@ -23,12 +23,12 @@ class DDPGAgent:
         self.min_action_val = min_action_val
         self.max_action_val = max_action_val
         self.buffer = Buffer(state_space_dim, action_space_dim)
-        self.noise_generator = GaussianNoise(0., 0.2, 1)
+        self.noise_generator = GaussianNoise(0., 0.2, action_space_dim)
 
-        self.actor_model = Actor(state_space_dim, max_action_val, hidden_layer_size)
+        self.actor_model = Actor(state_space_dim, action_space_dim, max_action_val, hidden_layer_size)
         self.critic_model = Critic(state_space_dim, action_space_dim, hidden_layer_size)
 
-        self.target_actor = Actor(state_space_dim, max_action_val, hidden_layer_size)
+        self.target_actor = Actor(state_space_dim, action_space_dim, max_action_val, hidden_layer_size)
         self.target_critic = Critic(state_space_dim, action_space_dim, hidden_layer_size)
 
         self.target_actor.model.set_weights(self.actor_model.model.get_weights())
@@ -55,7 +55,7 @@ class DDPGAgent:
         )
 
         with tf.GradientTape() as tape:
-            actions = self.actor_model.model(states)
+            actions = self.actor_model.forward(states)
             critic_value = self.critic_model.forward([states, actions])
             actor_loss = -tf.math.reduce_mean(critic_value)
 
