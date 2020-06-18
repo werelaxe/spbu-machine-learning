@@ -1,3 +1,4 @@
+from tensorflow.keras.models import load_model
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input, BatchNormalization, Concatenate
 
@@ -34,3 +35,9 @@ class Critic:
 
     def forward(self, inputs):
         return self.model(inputs)
+
+    def save(self, path):
+        self.model.save(path + "_critic.h5")
+
+    def load(self, path):
+        self.model = load_model(path + "_critic.h5")
