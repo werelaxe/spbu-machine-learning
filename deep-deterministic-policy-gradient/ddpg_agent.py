@@ -40,6 +40,7 @@ class DDPGAgent:
         self.critic_optimizer = tf.keras.optimizers.Adam(critic_lr)
         self.actor_optimizer = tf.keras.optimizers.Adam(actor_lr)
 
+    @tf.function
     def learn(self):
         states, actions, next_states, rewards = self.buffer.sample()
 
