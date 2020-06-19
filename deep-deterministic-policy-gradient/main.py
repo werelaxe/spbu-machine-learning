@@ -2,16 +2,22 @@ import os
 
 import tensorflow as tf
 import numpy as np
+from dm_control import viewer
 
 from ddpg_agent import DDPGAgent
-from env_wrappers import get_pendulum_env
-
+from env_wrappers import get_swimmer6_env, get_state
 
 MODEL_PATH = "model"
 
 
+def view_render(env, agent):
+    def random_policy(time_step):
+        return agent.get_best_action(get_state(time_step.observation))
+    viewer.launch(env.env, policy=random_policy)
+
+
 def main():
-    env = get_pendulum_env()
+    env = get_swimmer6_env()
 
     max_action_val = env.action_space.high[0]
     min_action_val = env.action_space.low[0]
@@ -26,25 +32,29 @@ def main():
     )
 
     episode_rewards = []
-    episodes_count = 5000
+    episodes_count = 50000
 
-    render = False
     for episode_index in range(episodes_count):
         try:
             episode_reward = 0
             state = env.reset()
+            current_reward = None
             while True:
-                tf_state = tf.expand_dims(tf.convert_to_tensor(state), 0)
-                action = agent.get_action(tf_state)
+                action = agent.get_action(state)
 
                 next_state, reward, done, _ = env.step(action)
-                agent.remember_step((state, action, next_state, reward))
-                if render:
-                    env.render()
+                if current_reward is None:
+                    current_reward = reward
+                    continue
+
+                reward_diff = reward - current_reward
+                current_reward = reward
+
+                agent.remember_step((state, action, next_state, reward_diff))
                 agent.learn()
                 agent.update_targets()
 
-                episode_reward += reward
+                episode_reward += reward_diff
 
                 if done:
                     break
@@ -57,9 +67,9 @@ def main():
             agent.save(MODEL_PATH)
             cmd = input("Input: ")
             if cmd == "1":
-                render = True
-            elif cmd == "0":
-                render = False
+                view_render(env, agent)
+        except Exception as e:
+            print(e)
 
 
 if __name__ == '__main__':

@@ -18,7 +18,7 @@ class DDPGAgent:
             max_action_val,
             hidden_layer_size=512,
             gamma=0.99,
-            tau=0.005,
+            tau=0.0001,
             path_to_load=None
     ):
         self.gamma = gamma
@@ -94,8 +94,12 @@ class DDPGAgent:
 
         self.target_actor.model.set_weights(new_weights)
 
+    def get_best_action(self, state):
+        tf_state = tf.expand_dims(tf.convert_to_tensor(state), 0)
+        return tf.squeeze(self.actor.forward(tf_state)).numpy()
+
     def get_action(self, state):
-        actions = tf.squeeze(self.actor.forward(state)).numpy() + self.noise_generator.get_noise()
+        actions = self.get_best_action(state) + self.noise_generator.get_noise()
         return np.clip(actions, self.min_action_val, self.max_action_val)
 
     def save(self, path):
