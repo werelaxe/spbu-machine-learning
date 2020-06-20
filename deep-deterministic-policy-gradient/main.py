@@ -34,42 +34,47 @@ def main():
     episode_rewards = []
     episodes_count = 50000
 
-    for episode_index in range(episodes_count):
-        try:
-            episode_reward = 0
-            state = env.reset()
-            current_reward = None
-            while True:
-                action = agent.get_action(state)
+    with open("avgs.log", "w") as avgs_file:
+        for episode_index in range(4059, episodes_count):
+            try:
+                episode_reward = 0
+                state = env.reset()
+                current_reward = None
+                while True:
+                    action = agent.get_action(state)
 
-                next_state, reward, done, _ = env.step(action)
-                if current_reward is None:
+                    next_state, reward, done, _ = env.step(action)
+                    if current_reward is None:
+                        current_reward = reward
+                        continue
+
+                    reward_diff = reward - current_reward
                     current_reward = reward
-                    continue
 
-                reward_diff = reward - current_reward
-                current_reward = reward
+                    agent.remember_step((state, action, next_state, reward_diff))
+                    agent.learn()
+                    agent.update_targets()
 
-                agent.remember_step((state, action, next_state, reward_diff))
-                agent.learn()
-                agent.update_targets()
+                    episode_reward += reward_diff
 
-                episode_reward += reward_diff
+                    if done:
+                        break
+                    state = next_state
+                episode_rewards.append(episode_reward)
+                avg = np.mean(episode_rewards[-100:])
+                print(f"Episode #{episode_index}, reward: {episode_reward}, avg: {avg}")
+                avgs_file.write(str(avg) + "\n")
+                avgs_file.flush()
 
-                if done:
-                    break
-                state = next_state
-            episode_rewards.append(episode_reward)
-            print(f"Episode #{episode_index}, reward: {episode_reward}, avg: {np.mean(episode_rewards[-100:])}")
-            if episode_index % 10 == 0:
+                if episode_index % 10 == 0:
+                    agent.save(MODEL_PATH)
+            except KeyboardInterrupt:
                 agent.save(MODEL_PATH)
-        except KeyboardInterrupt:
-            agent.save(MODEL_PATH)
-            cmd = input("Input: ")
-            if cmd == "1":
-                view_render(env, agent)
-        except Exception as e:
-            print(e)
+                cmd = input("Input: ")
+                if cmd == "1":
+                    view_render(env, agent)
+            except Exception as e:
+                print(e)
 
 
 if __name__ == '__main__':
