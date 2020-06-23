@@ -1,4 +1,5 @@
 import os
+import sys
 
 import tensorflow as tf
 import numpy as np
@@ -7,7 +8,7 @@ from dm_control import viewer
 from ddpg_agent import DDPGAgent
 from env_wrappers import get_swimmer6_env, get_state
 
-MODEL_PATH = "model"
+MODEL_PATH = "best"
 
 
 def view_render(env, agent):
@@ -17,6 +18,8 @@ def view_render(env, agent):
 
 
 def main():
+    test_mode = len(sys.argv) >= 2 and sys.argv[1] == "test"
+
     env = get_swimmer6_env()
 
     max_action_val = env.action_space.high[0]
@@ -32,16 +35,19 @@ def main():
     )
 
     episode_rewards = []
-    episodes_count = 50000
+    episodes_count = 1000000
 
     with open("avgs.log", "w") as avgs_file:
-        for episode_index in range(4059, episodes_count):
+        for episode_index in range(episodes_count):
             try:
                 episode_reward = 0
                 state = env.reset()
                 current_reward = None
                 while True:
-                    action = agent.get_action(state)
+                    if test_mode:
+                        action = agent.get_best_action(state)
+                    else:
+                        action = agent.get_action(state)
 
                     next_state, reward, done, _ = env.step(action)
                     if current_reward is None:
@@ -51,9 +57,10 @@ def main():
                     reward_diff = reward - current_reward
                     current_reward = reward
 
-                    agent.remember_step((state, action, next_state, reward_diff))
-                    agent.learn()
-                    agent.update_targets()
+                    if not test_mode:
+                        agent.remember_step((state, action, next_state, reward_diff))
+                        agent.learn()
+                        agent.update_targets()
 
                     episode_reward += reward_diff
 
@@ -63,13 +70,14 @@ def main():
                 episode_rewards.append(episode_reward)
                 avg = np.mean(episode_rewards[-100:])
                 print(f"Episode #{episode_index}, reward: {episode_reward}, avg: {avg}")
-                avgs_file.write(str(avg) + "\n")
+                avgs_file.write(str(episode_reward) + "\n")
                 avgs_file.flush()
 
-                if episode_index % 10 == 0:
+                if episode_index % 10 == 0 and not test_mode:
                     agent.save(MODEL_PATH)
             except KeyboardInterrupt:
-                agent.save(MODEL_PATH)
+                if not test_mode:
+                    agent.save(MODEL_PATH)
                 cmd = input("Input: ")
                 if cmd == "1":
                     view_render(env, agent)
