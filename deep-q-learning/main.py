@@ -93,8 +93,8 @@ class DQNAgent:
 def run_dqn_agent(dqn_agent, env, test=False):
     try:
         max_steps_count = 5000
-        episodes_count = 500000
-        rewards_window = deque(maxlen=100)
+        episodes_count = 200
+        rewards = []
 
         for episode_index in range(episodes_count):
             state = env.reset()
@@ -109,22 +109,28 @@ def run_dqn_agent(dqn_agent, env, test=False):
                 if not test:
                     dqn_agent.remember_step((state, action, next_state, reward, done))
                     dqn_agent.train_step()
-                else:
-                    env.render()
+                # else:
+                #     env.render()
                 state = next_state
 
                 if done:
-                    rewards_window.append(episode_reward)
-                    avg = sum(rewards_window) / len(rewards_window)
-                    print("episode: {}, reward: {}, avg: {}".format(episode_index, episode_reward, avg))
-                    if not test and episode_index % 100 == 0:
-                        dqn_agent.save()
-                        print("Model has been saved")
-                        if avg >= 220:
-                            return
                     break
+            print(episode_reward)
+            rewards.append(episode_reward)
+        total_episodes = len(rewards)
+        best_episodes = len([ep for ep in rewards if ep >= 200])
+        ok_episodes = len([ep for ep in rewards if 100 <= ep < 200])
+        poor_episodes = len([ep for ep in rewards if 0 <= ep < 100])
+        fail_episodes = len([ep for ep in rewards if ep < 0])
+        print(f"Total episodes: {total_episodes}")
+        print(f"Best episodes: {best_episodes}, {100 * best_episodes / total_episodes}%")
+        print(f"Ok episodes: {ok_episodes}, {100 * ok_episodes / total_episodes}%")
+        print(f"Poor episodes: {poor_episodes}, {100 * poor_episodes / total_episodes}%")
+        print(f"Fail episodes: {fail_episodes}, {100 * fail_episodes / total_episodes}%")
+
     except KeyboardInterrupt:
-        dqn_agent.save()
+        pass
+    #     dqn_agent.save()
 
 
 def main():
